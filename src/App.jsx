@@ -434,8 +434,8 @@ export default function App() {
             <Ground />
             {!isGameStarted && !isGameOver && (
               <div className="starter">
-                <p>Click or tap to start the game!
-                Connect wallet to get lives from your Meowdy Cats holdings</p>
+                <p>Click or tap to start the game!</p>
+               </p> Connect wallet to get lives from your Meowdy Cats holdings</p>
               </div>
             )}
           </div>

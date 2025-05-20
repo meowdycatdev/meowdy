@@ -203,6 +203,10 @@ body, html, #root {
   align-items: center;
 }
 
+.starter{
+  justify-content:center;
+}
+
 .copied-popup {
   background: rgba(44,44,44,0.95);
   color: #ffec8b;

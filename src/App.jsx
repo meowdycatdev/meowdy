@@ -424,6 +424,7 @@ export default function App() {
                 <h2>Game Over</h2>
                 <p>Your Score: {score}</p>
                 <p>Tap to Play Again</p>
+                <p>Connect wallet to get lives from your Meowdy Cats holdings</p>
               </div>
             )}
 

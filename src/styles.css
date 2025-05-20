@@ -203,14 +203,6 @@ body, html, #root {
   align-items: center;
 }
 
-.starter {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  height: 100%;
-}
 
 
 

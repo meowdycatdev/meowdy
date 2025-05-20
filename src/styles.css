@@ -203,9 +203,16 @@ body, html, #root {
   align-items: center;
 }
 
-.starter{
-  justify-content:center;
+.starter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 100%;
 }
+
+
 
 .copied-popup {
   background: rgba(44,44,44,0.95);

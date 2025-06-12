@@ -14,7 +14,7 @@ import useGameLoop from "./hooks/useGameLoop";
 
 import Meow from "./components/Meow";
 import Pipe from "./components/Pipe";
-import Ground from "./components/Ground";
+// import Ground from "./components/Ground"; // REMOVED
 import WalletConnection from "./wallet/WalletConnection";
 import NFTDisplay from "./nft/NFTDisplay";
 import TitleScreen from "./title/TitleScreen";
@@ -364,12 +364,13 @@ export default function App() {
             onClick={handleJump}
             style={gameBackgroundStyle}
           >
+            {/* HOME BUTTON moved lower */}
             <button
               className="home-button"
               onClick={() => setActiveLayer("title")}
               style={{
                 position: "absolute",
-                top: "10px",
+                top: "40px", // CHANGED from 10px
                 right: "10px",
                 width: "40px",
                 height: "40px",
@@ -387,7 +388,7 @@ export default function App() {
                 className="score-display"
                 style={{
                   position: "absolute",
-                  top: "10px",
+                  top: "40px", // CHANGED from 10px
                   left: "10px",
                   backgroundColor: "rgba(255, 255, 255, 0.8)",
                   padding: "5px 10px",
@@ -405,7 +406,7 @@ export default function App() {
                 className="lives-display"
                 style={{
                   position: "absolute",
-                  top: "10px",
+                  top: "40px", // CHANGED from 10px
                   left: "50%",
                   transform: "translateX(-50%)",
                   backgroundColor: "rgba(255, 255, 255, 0.8)",
@@ -431,11 +432,10 @@ export default function App() {
             {pipes.map((pipe, index) => (
               <Pipe key={index} {...pipe} />
             ))}
-            <Ground />
+            {/* <Ground /> */} {/* GROUND REMOVED */}
             {!isGameStarted && !isGameOver && (
               <div className="starter">
                 <p>Click or tap to start the game!</p>
-               <p> Connect wallet to get lives from your Meowdy Cats holdings</p>
               </div>
             )}
           </div>

@@ -31,6 +31,7 @@ function getBackgroundImage(score) {
  */
 export default function useGameLoop(onGameOver, nftCount = 1, walletAddress = "") {
   const [MeowY, setMeowY] = useState(250);
+  const [MeowXPos, setMeowXPos] = useState(Meow_X); // Cat horizontal position
   const [pipes, setPipes] = useState([]);
   const [score, setScore] = useState(0);
   const [isGameStarted, setIsGameStarted] = useState(false);
@@ -38,6 +39,13 @@ export default function useGameLoop(onGameOver, nftCount = 1, walletAddress = ""
   const [isInvulnerable, setIsInvulnerable] = useState(false);
   const [isBlinking, setIsBlinking] = useState(false);
   const [isVibrating, setIsVibrating] = useState(false);
+
+  // --- STATE FOR DELAYED START ---
+  const [isStartDelay, setIsStartDelay] = useState(false);
+  const startDelayTimeout = useRef(null);
+
+  // --- Ground collision offset ---
+  const GROUND_COLLISION_OFFSET = 30;
 
   const velocity = useRef(0);
   const animationFrameId = useRef(null);
@@ -57,7 +65,7 @@ export default function useGameLoop(onGameOver, nftCount = 1, walletAddress = ""
 
     const MeowTop = MeowY;
     const MeowBottom = MeowY + Meow_HEIGHT;
-    const MeowLeft = Meow_X;
+    const MeowLeft = MeowXPos;
     const MeowRight = MeowLeft + Meow_WIDTH;
 
     for (const pipe of pipes) {
@@ -76,32 +84,47 @@ export default function useGameLoop(onGameOver, nftCount = 1, walletAddress = ""
       }
     }
 
-    return MeowBottom >= GAME_HEIGHT;
+    // Lowered ground collision by +30px
+    return MeowBottom >= (GAME_HEIGHT + GROUND_COLLISION_OFFSET);
   };
 
+  // Only generate pipes if game is started and NOT in start delay
   useEffect(() => {
     const interval = setInterval(() => {
-      if (gameRunning.current && isGameStarted) generatePipe();
+      if (gameRunning.current && isGameStarted && !isStartDelay) generatePipe();
     }, PIPE_INTERVAL);
     return () => clearInterval(interval);
-  }, [isGameStarted]);
+  }, [isGameStarted, isStartDelay]);
 
   useEffect(() => {
     const gameLoop = () => {
       if (!gameRunning.current) return;
 
-      if (isGameStarted) {
+      // During start delay: move cat horizontally to Meow_X, but don't apply gravity
+      if (isGameStarted && isStartDelay) {
+        setMeowXPos((prev) => {
+          if (prev < Meow_X) {
+            const next = Math.min(prev + 5, Meow_X);
+            return next;
+          }
+          return prev;
+        });
+      }
+
+      // After delay, normal gameplay
+      if (isGameStarted && !isStartDelay) {
         velocity.current += GRAVITY;
         setMeowY((prev) => {
           const nextY = prev + velocity.current;
-          return Math.max(0, Math.min(nextY, GAME_HEIGHT - Meow_HEIGHT));
+          // Only clamp to the top, not the bottom, so the cat can go below the ground deathbox
+          return Math.max(0, nextY);
         });
 
         setPipes((prev) => {
           return prev
             .map((pipe) => {
               const newX = pipe.x - 2;
-              if (!pipe.scored && newX + PIPE_WIDTH < Meow_X) {
+              if (!pipe.scored && newX + PIPE_WIDTH < MeowXPos) {
                 pipe.scored = true;
                 setScore((s) => s + 1);
                 scoreSound.play();
@@ -121,7 +144,8 @@ export default function useGameLoop(onGameOver, nftCount = 1, walletAddress = ""
 
     animationFrameId.current = requestAnimationFrame(gameLoop);
     return () => cancelAnimationFrame(animationFrameId.current);
-  }, [isGameStarted, MeowY, pipes, isInvulnerable]);
+    // eslint-disable-next-line
+  }, [isGameStarted, MeowY, pipes, isInvulnerable, isStartDelay, MeowXPos]);
 
   // --- UPDATE HIGHSCORE ON GAME OVER ---
   const updateHighScoreForWallet = async () => {
@@ -137,15 +161,9 @@ export default function useGameLoop(onGameOver, nftCount = 1, walletAddress = ""
       if (!snapshot.empty) {
         const userDoc = snapshot.docs[0];
         const data = userDoc.data();
-        console.log("Current user data:", data);
         if (score > (data.highestScore || 0)) {
           await updateDoc(userDoc.ref, { highestScore: score });
-          console.log("High score updated!");
-        } else {
-          console.log("Score not higher than existing high score.");
         }
-      } else {
-        console.warn("No user found in users collection for", walletAddress);
       }
     } catch (e) {
       console.error("Error updating high score:", e);
@@ -185,6 +203,7 @@ export default function useGameLoop(onGameOver, nftCount = 1, walletAddress = ""
 
   const resetGame = () => {
     setMeowY(250);
+    setMeowXPos(0); // Start offscreen left for animation
     setPipes([]);
     setScore(0);
     setLives(nftCount > 0 ? nftCount : 1);
@@ -193,25 +212,45 @@ export default function useGameLoop(onGameOver, nftCount = 1, walletAddress = ""
     setIsInvulnerable(false);
     setIsBlinking(false);
     setIsVibrating(false);
+    setIsStartDelay(false);
     gameRunning.current = true;
   };
 
   const jump = () => {
-    if (gameRunning.current && isGameStarted) {
+    // No jump if not started or during start delay
+    if (!isGameStarted || isStartDelay) return;
+    if (gameRunning.current && isGameStarted && !isStartDelay) {
       velocity.current = FLAP_STRENGTH;
       jumpSound.play();
     }
   };
 
+  // --- DELAYED START LOGIC ---
   const startGame = () => {
+    if (isGameStarted) return; // Already started
+    setMeowXPos(0); // Start offscreen left
+    setMeowY(250);
+    setIsStartDelay(true);
     setIsGameStarted(true);
+    startDelayTimeout.current = setTimeout(() => {
+      setIsStartDelay(false);
+      velocity.current = 0; // reset velocity so cat doesn't drop too fast at start
+      setMeowXPos(Meow_X); // Ensure ends up at Meow_X
+    }, 500); // 0.5 seconds
   };
 
-  // Add the backgroundImage to returned object
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (startDelayTimeout.current) clearTimeout(startDelayTimeout.current);
+    };
+  }, []);
+
   const backgroundImage = getBackgroundImage(score);
 
   return {
     MeowY,
+    MeowX: MeowXPos, // Expose for rendering
     pipes,
     score,
     jump,
@@ -222,6 +261,7 @@ export default function useGameLoop(onGameOver, nftCount = 1, walletAddress = ""
     lives,
     isBlinking,
     isVibrating,
-    backgroundImage, // <- use this in your JSX
+    backgroundImage,
+    isStartDelay, // <-- exposed for UI
   };
 }

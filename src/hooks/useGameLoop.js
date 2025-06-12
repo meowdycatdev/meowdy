@@ -45,7 +45,7 @@ export default function useGameLoop(onGameOver, nftCount = 1, walletAddress = ""
   const startDelayTimeout = useRef(null);
 
   // --- Ground collision offset ---
-  const GROUND_COLLISION_OFFSET = 30;
+  const GROUND_COLLISION_OFFSET = 50; // 30 + 20
 
   const velocity = useRef(0);
   const animationFrameId = useRef(null);
@@ -84,7 +84,7 @@ export default function useGameLoop(onGameOver, nftCount = 1, walletAddress = ""
       }
     }
 
-    // Lowered ground collision by +30px
+    // Lowered ground collision by +50px (30px + 20px)
     return MeowBottom >= (GAME_HEIGHT + GROUND_COLLISION_OFFSET);
   };
 
